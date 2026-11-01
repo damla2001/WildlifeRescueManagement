@@ -630,7 +630,21 @@ class RescueManagementGUI : JFrame() {
 // Add Equipment tab
 
 // Store equipment records while the application is running
-        val equipments = mutableListOf<Equipment>()
+        //val equipments = mutableListOf<Equipment>()
+        val equipments = DataStorage.loadEquipment() //load equipment from txt file
+        //read equipment txt file and display saved equipment to the table
+        equipments.forEach { equipment ->
+            equipmentTableModel.addRow(
+                arrayOf<Any>(
+                    equipment.equipmentId,
+                    equipment.equipmentType,
+                    equipment.quantity,
+                    equipment.location,
+                    equipment.available
+                )
+            )
+        }
+
 
 // Save a new equipment record
         saveEquipmentButton.addActionListener {
@@ -658,6 +672,7 @@ class RescueManagementGUI : JFrame() {
                 )
 
                 equipments.add(equipment)
+                DataStorage.saveEquipment(equipments) //update equipment.txt file after each save
 
                 equipmentTableModel.addRow(
                     arrayOf<Any>(
@@ -709,6 +724,7 @@ class RescueManagementGUI : JFrame() {
                         )
 
                         equipments[modelRow] = updatedEquipment
+                        DataStorage.saveEquipment(equipments) //override edited equipment records to the equipment.txt file
 
                         equipmentTableModel.setValueAt(id, modelRow, 0)
                         equipmentTableModel.setValueAt(type, modelRow, 1)
@@ -741,6 +757,7 @@ class RescueManagementGUI : JFrame() {
 
                 if (confirm == JOptionPane.YES_OPTION) {
                     equipments.removeAt(modelRow)
+                    DataStorage.saveEquipment(equipments) //remove deleted equipment from equipment.txt file
                     equipmentTableModel.removeRow(modelRow)
 
                     equipmentIdField.text = ""

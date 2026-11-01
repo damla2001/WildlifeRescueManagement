@@ -62,4 +62,47 @@ object DataStorage{
         return facilities
 
     }
+
+    //saving equipment to text file
+    fun saveEquipment(equipments: List<Equipment>){
+        folder.mkdirs()
+
+        val file = File(folder, "equipment.txt")
+
+        file.writeText(
+            equipments.joinToString("\n") {equipment ->
+                listOf(
+                    equipment.equipmentId.toString(),
+                    equipment.equipmentType,
+                    equipment.quantity.toString(),
+                    equipment.location,
+                    equipment.available.toString()
+                ).joinToString("|")
+            }
+        )
+    }
+
+    //loading equipment from text file
+    fun loadEquipment(): MutableList<Equipment>{
+        val file = File(folder, "equipment.txt")
+        if (!file.exists()){
+            return mutableListOf()
+        }
+        val equipments = mutableListOf<Equipment>()
+
+        file.forEachLine { line ->
+            val parts = line.split("|")
+
+            val equipment = Equipment(
+                equipmentId = parts[0].toInt(),
+                equipmentType = parts[1],
+                quantity = parts[2].toInt(),
+                location = parts[3],
+                available = parts [4].toBoolean()
+
+            )
+            equipments.add(equipment)
+        }
+        return equipments
+    }
 }
