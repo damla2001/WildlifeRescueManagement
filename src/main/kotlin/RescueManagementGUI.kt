@@ -142,6 +142,8 @@ class RescueManagementGUI : JFrame() {
 
                     refreshTable()
                     clearFields()
+                    //save function to text aa_save
+
 
                     showMessage("Rescue case added successfully!")
                 }
@@ -320,9 +322,24 @@ class RescueManagementGUI : JFrame() {
             override fun isCellEditable(row: Int, column: Int): Boolean = false
         }
 
-        val facilities = mutableListOf<Facility>()
+        val facilities = DataStorage.loadFacilities()
         val facilityTable = JTable(facilityTableModel)
         facilityTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION)
+
+        facilities.forEach { facility ->
+            facilityTableModel.addRow(
+                arrayOf<Any>(
+                    facility.facilityId,
+                    facility.name,
+                    facility.location,
+                    facility.capacity,
+                    facility.suitableSpecies.joinToString(", "),
+                    facility.availableFacilities.joinToString(", "),
+                    facility.available
+                )
+            )
+        }
+
         facilityTable.selectionModel.addListSelectionListener { event ->
             if (!event.valueIsAdjusting && facilityTable.selectedRow >= 0) {
                 val row = facilityTable.convertRowIndexToModel(
@@ -386,6 +403,7 @@ class RescueManagementGUI : JFrame() {
                 )
 
                 facilities.add(facility)
+                DataStorage.saveFacilities(facilities)
 
                 facilityTableModel.addRow(
                     arrayOf<Any>(
@@ -402,136 +420,139 @@ class RescueManagementGUI : JFrame() {
                 showMessage("Facility added successfully!")
             }
 
-            clearFacilityButton.addActionListener {
-                facilityIdField.text = ""
-                facilityNameField.text = ""
-                facilityLocationField.text = ""
-                facilityCapacityField.text = ""
-                suitableSpeciesField.text = ""
-                availableFacilitiesField.text = ""
 
-                facilityAvailableCheckBox.isSelected = true
-                facilityTable.clearSelection()
-            }
 
-            // Edit selected facility
-            editFacilityButton.addActionListener {
 
-                val selectedRow = facilityTable.selectedRow
+        }
+        clearFacilityButton.addActionListener {
+            facilityIdField.text = ""
+            facilityNameField.text = ""
+            facilityLocationField.text = ""
+            facilityCapacityField.text = ""
+            suitableSpeciesField.text = ""
+            availableFacilitiesField.text = ""
 
-                if (selectedRow == -1) {
-                    showMessage("Please select a facility to edit.")
+            facilityAvailableCheckBox.isSelected = true
+            facilityTable.clearSelection()
+        }
+
+        // Edit selected facility
+        editFacilityButton.addActionListener {
+
+            val selectedRow = facilityTable.selectedRow
+
+            if (selectedRow == -1) {
+                showMessage("Please select a facility to edit.")
+            } else {
+                val modelRow = facilityTable.convertRowIndexToModel(selectedRow)
+
+                val id = facilityIdField.text.trim().toIntOrNull()
+                val name = facilityNameField.text.trim()
+                val location = facilityLocationField.text.trim()
+                val capacity = facilityCapacityField.text.trim().toIntOrNull()
+
+                val species = suitableSpeciesField.text
+                    .split(",")
+                    .map { it.trim() }
+                    .filter { it.isNotEmpty() }
+
+                val features = availableFacilitiesField.text
+                    .split(",")
+                    .map { it.trim() }
+                    .filter { it.isNotEmpty() }
+
+                if (id == null || id <= 0 ||
+                    name.isBlank() || location.isBlank() ||
+                    capacity == null || capacity <= 0 ||
+                    species.isEmpty()
+                ) {
+                    showMessage("Please enter valid facility details.")
+
+                } else if (facilities.withIndex().any {
+                        it.index != modelRow && it.value.facilityId == id
+                    }) {
+                    showMessage("Facility ID already exists.")
+
+                } else if (capacity < facilities[modelRow].currentAnimals) {
+                    showMessage(
+                        "Capacity cannot be lower than the number of allocated animals."
+                    )
+
                 } else {
-                    val modelRow = facilityTable.convertRowIndexToModel(selectedRow)
+                    val previousFacility = facilities[modelRow]
 
-                    val id = facilityIdField.text.trim().toIntOrNull()
-                    val name = facilityNameField.text.trim()
-                    val location = facilityLocationField.text.trim()
-                    val capacity = facilityCapacityField.text.trim().toIntOrNull()
+                    val updatedFacility = Facility(
+                        facilityId = id,
+                        name = name,
+                        location = location,
+                        capacity = capacity,
+                        suitableSpecies = species,
+                        available = facilityAvailableCheckBox.isSelected,
+                        availableFacilities = features
+                    )
 
-                    val species = suitableSpeciesField.text
-                        .split(",")
-                        .map { it.trim() }
-                        .filter { it.isNotEmpty() }
+                    updatedFacility.currentAnimals = previousFacility.currentAnimals
+                    facilities[modelRow] = updatedFacility
+                    DataStorage.saveFacilities(facilities)
 
-                    val features = availableFacilitiesField.text
-                        .split(",")
-                        .map { it.trim() }
-                        .filter { it.isNotEmpty() }
+                    facilityTableModel.setValueAt(id, modelRow, 0)
+                    facilityTableModel.setValueAt(name, modelRow, 1)
+                    facilityTableModel.setValueAt(location, modelRow, 2)
+                    facilityTableModel.setValueAt(capacity, modelRow, 3)
+                    facilityTableModel.setValueAt(
+                        species.joinToString(", "), modelRow, 4
+                    )
+                    facilityTableModel.setValueAt(
+                        features.joinToString(", "), modelRow, 5
+                    )
+                    facilityTableModel.setValueAt(
+                        updatedFacility.available, modelRow, 6
+                    )
 
-                    if (id == null || id <= 0 ||
-                        name.isBlank() || location.isBlank() ||
-                        capacity == null || capacity <= 0 ||
-                        species.isEmpty()
-                    ) {
-                        showMessage("Please enter valid facility details.")
-
-                    } else if (facilities.withIndex().any {
-                            it.index != modelRow && it.value.facilityId == id
-                        }) {
-                        showMessage("Facility ID already exists.")
-
-                    } else if (capacity < facilities[modelRow].currentAnimals) {
-                        showMessage(
-                            "Capacity cannot be lower than the number of allocated animals."
-                        )
-
-                    } else {
-                        val previousFacility = facilities[modelRow]
-
-                        val updatedFacility = Facility(
-                            facilityId = id,
-                            name = name,
-                            location = location,
-                            capacity = capacity,
-                            suitableSpecies = species,
-                            available = facilityAvailableCheckBox.isSelected,
-                            availableFacilities = features
-                        )
-
-                        updatedFacility.currentAnimals = previousFacility.currentAnimals
-                        facilities[modelRow] = updatedFacility
-
-                        facilityTableModel.setValueAt(id, modelRow, 0)
-                        facilityTableModel.setValueAt(name, modelRow, 1)
-                        facilityTableModel.setValueAt(location, modelRow, 2)
-                        facilityTableModel.setValueAt(capacity, modelRow, 3)
-                        facilityTableModel.setValueAt(
-                            species.joinToString(", "), modelRow, 4
-                        )
-                        facilityTableModel.setValueAt(
-                            features.joinToString(", "), modelRow, 5
-                        )
-                        facilityTableModel.setValueAt(
-                            updatedFacility.available, modelRow, 6
-                        )
-
-                        showMessage("Facility updated successfully!")
-                    }
+                    showMessage("Facility updated successfully!")
                 }
             }
-            // Delete selected facility
-            deleteFacilityButton.addActionListener {
-                val selectedRow = facilityTable.selectedRow
+        }
+        // Delete selected facility
+        deleteFacilityButton.addActionListener {
+            val selectedRow = facilityTable.selectedRow
 
-                if (selectedRow == -1) {
-                    showMessage("Please select a facility to delete.")
+            if (selectedRow == -1) {
+                showMessage("Please select a facility to delete.")
+            } else {
+                val modelRow = facilityTable.convertRowIndexToModel(selectedRow)
+                val facility = facilities[modelRow]
+
+                if (facility.currentAnimals > 0) {
+                    showMessage("Cannot delete a facility with allocated animals.")
                 } else {
-                    val modelRow = facilityTable.convertRowIndexToModel(selectedRow)
-                    val facility = facilities[modelRow]
+                    val confirmation = JOptionPane.showConfirmDialog(
+                        this,
+                        "Are you sure you want to delete this facility?",
+                        "Confirm Deletion",
+                        JOptionPane.YES_NO_OPTION
+                    )
 
-                    if (facility.currentAnimals > 0) {
-                        showMessage("Cannot delete a facility with allocated animals.")
-                    } else {
-                        val confirmation = JOptionPane.showConfirmDialog(
-                            this,
-                            "Are you sure you want to delete this facility?",
-                            "Confirm Deletion",
-                            JOptionPane.YES_NO_OPTION
-                        )
-
-                        if (confirmation == JOptionPane.YES_OPTION) {
-                            facilities.removeAt(modelRow)
-                            facilityTableModel.removeRow(modelRow)
+                    if (confirmation == JOptionPane.YES_OPTION) {
+                        facilities.removeAt(modelRow)
+                        DataStorage.saveFacilities(facilities)
+                        facilityTableModel.removeRow(modelRow)
 
 // Clear all facility fields after deletion
-                            facilityIdField.text = ""
-                            facilityNameField.text = ""
-                            facilityLocationField.text = ""
-                            facilityCapacityField.text = ""
-                            suitableSpeciesField.text = ""
-                            availableFacilitiesField.text = ""
+                        facilityIdField.text = ""
+                        facilityNameField.text = ""
+                        facilityLocationField.text = ""
+                        facilityCapacityField.text = ""
+                        suitableSpeciesField.text = ""
+                        availableFacilitiesField.text = ""
 
-                            facilityAvailableCheckBox.isSelected = true
-                            facilityTable.clearSelection()
+                        facilityAvailableCheckBox.isSelected = true
+                        facilityTable.clearSelection()
 
-                            showMessage("Facility deleted successfully!")
-                        }
+                        showMessage("Facility deleted successfully!")
                     }
                 }
             }
-
-
         }
 
         tabbedPane.addTab("Facilities", facilityPanel)
