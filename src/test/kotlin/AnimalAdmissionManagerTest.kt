@@ -291,4 +291,76 @@ class AnimalAdmissionManagerTest {
 
         assertEquals("Completed", animal.rehabilitationStatus)
     }
+
+    @Test
+    fun testRehabilitationCaseAssignment() {
+        val manager = AnimalAdmissionManager()
+
+        val animal = Animal(
+            id = 8,
+            species = "Fox",
+            condition = "Injured",
+            careRequirements = "Daily treatment",
+            rehabilitationStatus = "In progress"
+        )
+
+        val rescueCase = RescueCase(
+            caseReference = "RC100",
+            rescueDate = "2026-11-12",
+            location = "Croydon",
+            reportedCondition = "Injured",
+            status = "Open"
+        )
+
+        manager.registerAnimal(animal)
+        manager.registerRescueCase(rescueCase)
+        manager.linkAnimalToRescueCase(8, "RC100")
+
+        manager.assignToRehabilitationCase(8, "RC100")
+
+        assertEquals("RC100", animal.rehabilitationCaseReference)
+
+        assertFailsWith<IllegalArgumentException> {
+            manager.assignToRehabilitationCase(8, "INVALID")
+        }
+
+        assertEquals("RC100", animal.rehabilitationCaseReference)
+    }
+    @Test
+    fun testResourceRequirements() {
+        val manager = AnimalAdmissionManager()
+
+        val animal = Animal(
+            id = 9,
+            species = "Fox",
+            condition = "Injured",
+            careRequirements = "Medical care",
+            rehabilitationStatus = "In progress"
+        )
+
+        manager.registerAnimal(animal)
+
+        manager.recordResourceRequirements(
+            9,
+            "Isolation enclosure, veterinary equipment"
+        )
+
+        assertEquals(
+            "Isolation enclosure, veterinary equipment",
+            animal.resourceRequirements
+        )
+
+        assertFailsWith<IllegalArgumentException> {
+            manager.recordResourceRequirements(999, "Medical equipment")
+        }
+
+        assertFailsWith<IllegalArgumentException> {
+            manager.recordResourceRequirements(9, "")
+        }
+
+        assertEquals(
+            "Isolation enclosure, veterinary equipment",
+            animal.resourceRequirements
+        )
+    }
 }

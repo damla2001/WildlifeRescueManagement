@@ -27,6 +27,8 @@ class AnimalAllocationPanel(
     private val allocationDateField = JTextField()
     private val rehabilitationAnimalIdField = JTextField()
     private val rehabilitationStatusField = JTextField()
+    private val rehabilitationCaseField = JTextField()
+    private val resourceRequirementsField = JTextField()
 
     private val tableModel = object : DefaultTableModel(
         arrayOf(
@@ -49,7 +51,7 @@ class AnimalAllocationPanel(
     init {
         border = BorderFactory.createEmptyBorder(10, 10, 10, 10)
 
-        val formPanel = JPanel(GridLayout(6, 2, 10, 10))
+        val formPanel = JPanel(GridLayout(8, 2, 10, 10))
 
         formPanel.add(JLabel("Animal ID:"))
         formPanel.add(animalIdField)
@@ -67,17 +69,26 @@ class AnimalAllocationPanel(
 
         formPanel.add(JLabel("New Rehabilitation Status:"))
         formPanel.add(rehabilitationStatusField)
+        formPanel.add(JLabel("Rehabilitation Case Reference:"))
+        formPanel.add(rehabilitationCaseField)
+
+        formPanel.add(JLabel("Resource Requirements:"))
+        formPanel.add(resourceRequirementsField)
 
         val allocateButton = JButton("Allocate Animal")
         val cancelButton = JButton("Cancel Allocation")
         val refreshButton = JButton("Refresh")
         val updateStatusButton = JButton("Update Rehabilitation Status")
+        val assignCaseButton = JButton("Assign Rehabilitation Case")
+        val saveResourcesButton = JButton("Save Resource Requirements")
 
         val buttonPanel = JPanel()
         buttonPanel.add(allocateButton)
         buttonPanel.add(cancelButton)
         buttonPanel.add(refreshButton)
         buttonPanel.add(updateStatusButton)
+        buttonPanel.add(assignCaseButton)
+        buttonPanel.add(saveResourcesButton)
 
         val topPanel = JPanel(BorderLayout(10, 10))
         topPanel.add(formPanel, BorderLayout.CENTER)
@@ -168,7 +179,37 @@ class AnimalAllocationPanel(
                     facility = facility,
                     allocationDate = date
                 )
+                assignCaseButton.addActionListener {
+                    try {
+                        val animalId = rehabilitationAnimalIdField.text.trim().toIntOrNull()
+                            ?: throw IllegalArgumentException("Please enter a valid Animal ID.")
 
+                        val caseReference = rehabilitationCaseField.text.trim()
+
+                        require(animalId > 0) {
+                            "Animal ID must be greater than zero."
+                        }
+
+                        require(caseReference.isNotBlank()) {
+                            "Please enter a rehabilitation case reference."
+                        }
+
+                        manager.assignToRehabilitationCase(animalId, caseReference)
+
+                        JOptionPane.showMessageDialog(
+                            this,
+                            "Animal assigned to rehabilitation case successfully!"
+                        )
+
+                    } catch (e: IllegalArgumentException) {
+                        JOptionPane.showMessageDialog(
+                            this,
+                            e.message ?: "Unable to assign rehabilitation case.",
+                            "Assignment Error",
+                            JOptionPane.ERROR_MESSAGE
+                        )
+                    }
+                }
                 refreshTable()
 
                 JOptionPane.showMessageDialog(
@@ -266,6 +307,64 @@ class AnimalAllocationPanel(
             }
         }
 
+
+        assignCaseButton.addActionListener {
+            try {
+                val animalId = rehabilitationAnimalIdField.text.trim().toIntOrNull()
+                    ?: throw IllegalArgumentException("Please enter a valid Animal ID.")
+
+                val caseReference = rehabilitationCaseField.text.trim()
+
+                require(animalId > 0) {
+                    "Animal ID must be greater than zero."
+                }
+
+                require(caseReference.isNotBlank()) {
+                    "Please enter a rehabilitation case reference."
+                }
+
+                manager.assignToRehabilitationCase(animalId, caseReference)
+
+                JOptionPane.showMessageDialog(
+                    this,
+                    "Animal assigned to rehabilitation case successfully!"
+                )
+            } catch (e: IllegalArgumentException) {
+                JOptionPane.showMessageDialog(
+                    this,
+                    e.message ?: "Unable to assign rehabilitation case.",
+                    "Assignment Error",
+                    JOptionPane.ERROR_MESSAGE
+                )
+            }
+        }
+
+        saveResourcesButton.addActionListener {
+            try {
+                val animalId = rehabilitationAnimalIdField.text.trim().toIntOrNull()
+                    ?: throw IllegalArgumentException("Please enter a valid Animal ID.")
+
+                require(animalId > 0) {
+                    "Animal ID must be greater than zero."
+                }
+
+                val requirements = resourceRequirementsField.text.trim()
+
+                manager.recordResourceRequirements(animalId, requirements)
+
+                JOptionPane.showMessageDialog(
+                    this,
+                    "Resource requirements saved successfully!"
+                )
+            } catch (e: IllegalArgumentException) {
+                JOptionPane.showMessageDialog(
+                    this,
+                    e.message ?: "Unable to save resource requirements.",
+                    "Resource Requirements Error",
+                    JOptionPane.ERROR_MESSAGE
+                )
+            }
+        }
         refreshTable()
     }
 

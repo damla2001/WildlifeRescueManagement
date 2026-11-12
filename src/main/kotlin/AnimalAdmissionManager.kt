@@ -111,4 +111,36 @@ class AnimalAdmissionManager {
 
         animal.rehabilitationStatus = newStatus.trim()
     }
+    // Assign an animal to a rehabilitation case
+    fun assignToRehabilitationCase(
+        animalId: Int,
+        caseReference: String
+    ) {
+        val animal = registeredAnimals[animalId]
+            ?: throw IllegalArgumentException("Animal not found")
+
+        val rescueCase = rescueCases[caseReference]
+            ?: throw IllegalArgumentException("Rehabilitation case not found")
+
+        require(rescueCase.animals.any { it.id == animalId }) {
+            "Animal must be linked to this rescue case first"
+        }
+
+        animal.rehabilitationCaseReference = caseReference
+    }
+
+    // Record the resources required by an animal
+    fun recordResourceRequirements(
+        animalId: Int,
+        requirements: String
+    ) {
+        val animal = registeredAnimals[animalId]
+            ?: throw IllegalArgumentException("Animal not found")
+
+        require(requirements.isNotBlank()) {
+            "Resource requirements cannot be empty"
+        }
+
+        animal.resourceRequirements = requirements.trim()
+    }
 }
