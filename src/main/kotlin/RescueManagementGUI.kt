@@ -644,6 +644,21 @@ class RescueManagementGUI : JFrame() {
                 )
             )
         }
+        //equipment is shown when editing the record:
+        equipmentTable.selectionModel.addListSelectionListener { event ->
+            if (!event.valueIsAdjusting && equipmentTable.selectedRow >= 0) {
+                val row = equipmentTable.convertRowIndexToModel(
+                    equipmentTable.selectedRow
+                )
+                val equipment = equipments[row]
+
+                equipmentIdField.text = equipment.equipmentId.toString()
+                equipmentTypeField.text = equipment.equipmentType
+                equipmentQuantityField.text = equipment.quantity.toString()
+                equipmentLocationField.text = equipment.location
+                equipmentAvailableCheckBox.isSelected = equipment.available
+            }
+        }
 
 
 // Save a new equipment record
@@ -835,7 +850,7 @@ class RescueManagementGUI : JFrame() {
         staffButtonPanel.add(clearStaffButton)
 
         // Staff table
-        val staffTableModel = DefaultTableModel(
+        val staffTableModel = object : DefaultTableModel(
             arrayOf(
                 "Staff ID",
                 "Name",
@@ -844,14 +859,45 @@ class RescueManagementGUI : JFrame() {
                 "Available"
             ),
             0
-        )
+        ){
+            override fun isCellEditable(row: Int, column: Int): Boolean = false
+        }
 
         val staffTable = JTable(staffTableModel)
 
         staffTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION)
 
-        // Store staff records
-        val staffList = mutableListOf<Staff>()
+        // load staff records
+        val staffList = DataStorage.loadStaff()
+        staffList.forEach{staff ->
+            staffTableModel.addRow(
+                arrayOf<Any>(
+                    staff.staffId,
+                    staff.name,
+                    staff.role,
+                    staff.qualifications.joinToString(", "),
+                    staff.available,
+                )
+            )
+        }
+        //staff records are shown when editing:
+        staffTable.selectionModel.addListSelectionListener { event ->
+            if (!event.valueIsAdjusting && staffTable.selectedRow >= 0){
+                val row = staffTable.convertRowIndexToModel(
+                    staffTable.selectedRow
+                )
+
+                val staff = staffList[row]
+
+                staffIdField.text = staff.staffId.toString()
+                staffNameField.text = staff.name
+                staffRoleField.text = staff.role
+                staffQualificationsField.text =
+                    staff.qualifications.joinToString(", ")
+                staffAvailableCheckBox.isSelected = staff.available
+            }
+        }
+
 
         // Combine form and buttons
         val staffTopPanel = JPanel(BorderLayout(10, 10))
@@ -904,6 +950,7 @@ class RescueManagementGUI : JFrame() {
                 )
 
                 staffList.add(newStaff)
+                DataStorage.saveStaff(staffList)
 
                 staffTableModel.addRow(
                     arrayOf<Any>(
@@ -958,6 +1005,7 @@ class RescueManagementGUI : JFrame() {
                         )
 
                         staffList[modelRow] = updatedStaff
+                        DataStorage.saveStaff(staffList)
 
                         staffTableModel.setValueAt(id, modelRow, 0)
                         staffTableModel.setValueAt(name, modelRow, 1)
@@ -993,6 +1041,7 @@ class RescueManagementGUI : JFrame() {
                     val modelRow = staffTable.convertRowIndexToModel(selectedRow)
 
                     staffList.removeAt(modelRow)
+                    DataStorage.saveStaff(staffList)
                     staffTableModel.removeRow(modelRow)
 
                     staffIdField.text = ""

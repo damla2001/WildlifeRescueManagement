@@ -105,4 +105,48 @@ object DataStorage{
         }
         return equipments
     }
+    //saving staff to text file
+    fun saveStaff(staffList: List<Staff>){
+        folder.mkdirs()
+
+        val file = File(folder, "staff.txt")
+
+        file.writeText(
+            staffList.joinToString("\n") {staff ->
+                listOf(
+                    staff.staffId.toString(),
+                    staff.name,
+                    staff.role,
+                    staff.qualifications.joinToString(";"),
+                    staff.available.toString(),
+
+
+                ).joinToString("|")
+            }
+        )
+    }
+
+    //loading staff to text file
+    fun loadStaff(): MutableList<Staff>{
+        val file = File(folder, "staff.txt")
+
+        if (!file.exists()){
+            return mutableListOf()
+        }
+        val staffList = mutableListOf<Staff>()
+
+        file.forEachLine { line ->
+            val parts = line.split("|")
+            val staff = Staff(
+                staffId = parts[0].toInt(),
+                name = parts[1],
+                role = parts[2],
+                qualifications = parts[3].split(";"),
+                available = parts[4].toBoolean()
+            )
+            staffList.add(staff)
+        }
+        return staffList
+    }
+
 }
