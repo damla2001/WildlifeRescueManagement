@@ -363,4 +363,64 @@ class AnimalAdmissionManagerTest {
             animal.resourceRequirements
         )
     }
+
+    @Test
+    fun testReallocationAfterCancellation() {
+        val manager = AnimalAdmissionManager()
+
+        val animal = Animal(
+            id = 10,
+            species = "Fox",
+            condition = "Recovering",
+            careRequirements = "Medical care",
+            rehabilitationStatus = "In progress"
+        )
+
+        val firstFacility = Facility(
+            facilityId = 6,
+            name = "Rescue Centre A",
+            location = "London",
+            capacity = 2,
+            suitableSpecies = listOf("Fox"),
+            available = true,
+            availableFacilities = listOf("Medical Room")
+        )
+
+        val secondFacility = Facility(
+            facilityId = 7,
+            name = "Rescue Centre B",
+            location = "Croydon",
+            capacity = 2,
+            suitableSpecies = listOf("Fox"),
+            available = true,
+            availableFacilities = listOf("Recovery Room")
+        )
+
+        manager.registerAnimal(animal)
+
+        val firstAllocation = manager.allocateAnimal(
+            allocationId = 6,
+            animalId = 10,
+            facility = firstFacility,
+            allocationDate = "2026-11-22"
+        )
+
+        manager.cancelAllocation(6)
+
+        val secondAllocation = manager.allocateAnimal(
+            allocationId = 7,
+            animalId = 10,
+            facility = secondFacility,
+            allocationDate = "2026-11-22"
+        )
+
+        assertEquals(false, firstAllocation.active)
+        assertEquals(true, secondAllocation.active)
+
+        assertEquals(0, firstFacility.currentAnimals)
+        assertEquals(1, secondFacility.currentAnimals)
+
+        assertEquals(2, manager.getAllocations().size)
+    }
+
 }
