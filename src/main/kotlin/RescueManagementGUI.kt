@@ -15,10 +15,9 @@ class RescueManagementGUI : JFrame() {
     private val animalAdmissionManager = AnimalAdmissionManager()
     private var nextAnimalId = 1
 
-    private val facilities = mutableListOf<Facility>()
+    private val facilities = DataStorage.loadFacilities()
     private val rescueCases = mutableListOf<RescueCase>()
     private val cases = mutableListOf<CaseRecord>()
-
     private val caseReferenceField = JTextField()
     private val rescueDateField = JTextField()
     private val locationField = JTextField()
@@ -552,7 +551,7 @@ class RescueManagementGUI : JFrame() {
                 )
             }
         }
-
+        refresh()
         fun readFacility(): Facility? {
             val id = idField.text.trim().toIntOrNull()
             val name = nameField.text.trim()
@@ -614,8 +613,10 @@ class RescueManagementGUI : JFrame() {
             }
 
             facilities.add(facility)
+            DataStorage.saveFacilities(facilities)
             refresh()
             clearFields()
+
 
             showMessage("Facility added successfully!")
         }
@@ -663,6 +664,7 @@ class RescueManagementGUI : JFrame() {
             }
 
             facilities[row] = updated
+            DataStorage.saveFacilities(facilities)
             refresh()
             clearFields()
 
@@ -696,6 +698,7 @@ class RescueManagementGUI : JFrame() {
                 )
             ) {
                 facilities.removeAt(row)
+                DataStorage.saveFacilities(facilities)
                 refresh()
                 clearFields()
                 showMessage("Facility deleted successfully!")
