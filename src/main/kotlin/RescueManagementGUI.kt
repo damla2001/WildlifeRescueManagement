@@ -87,7 +87,44 @@ class RescueManagementGUI : JFrame() {
     private val equipments = DataStorage.loadEquipment()
     private val staffList = DataStorage.loadStaff()
 
+    private fun persistTaskC() {
+        TaskCPersistence.save(rescueCases, animalAdmissionManager)
+        DataStorage.saveFacilities(facilities)
+    }
+
+    private fun persistTaskCOrWarn(): Boolean = try {
+        persistTaskC()
+        true
+    } catch (e: Exception) {
+        showMessage("The change is visible, but saving failed: ${e.message}")
+        false
+    }
+
     init {
+        // Restore persisted cases and animals BEFORE creating the allocation tab.
+        val restoredCases = try {
+            TaskCPersistence.restore(animalAdmissionManager, facilities)
+        } catch (e: Exception) {
+            JOptionPane.showMessageDialog(
+                this, "Saved rescue data could not be loaded: ${e.message}",
+                "Persistence Error", JOptionPane.ERROR_MESSAGE
+            )
+            throw e // Never silently overwrite an unreadable saved file.
+        }
+        rescueCases.addAll(restoredCases)
+        cases.addAll(restoredCases.map { rescueCase ->
+            CaseRecord(
+                rescueCase.caseReference, rescueCase.rescueDate, rescueCase.location,
+                rescueCase.animals.firstOrNull()?.species.orEmpty(),
+                rescueCase.reportedAnimalCount, rescueCase.reportedCondition,
+                rescueCase.initialAssessment, rescueCase.requiredCare,
+                rescueCase.status, rescueCase.additionalNotes
+            )
+        })
+        nextAnimalId = (animalAdmissionManager.getRegisteredAnimals()
+            .maxOfOrNull { it.id } ?: 0) + 1
+        refreshCaseTable()
+
         title = "Wildlife Rescue Management System"
         setSize(1100, 750)
         defaultCloseOperation = EXIT_ON_CLOSE
@@ -99,7 +136,8 @@ class RescueManagementGUI : JFrame() {
             "Animal Allocation",
             AnimalAllocationPanel(
                 animalAdmissionManager,
-                facilities
+                facilities,
+                onDataChanged = ::persistTaskC
             )
         )
 
@@ -276,6 +314,7 @@ class RescueManagementGUI : JFrame() {
             rescueCases.add(rescueCase)
             cases.add(record)
 
+            if (!persistTaskCOrWarn()) return@addActionListener
             refreshCaseTable()
             clearCaseFields()
 
@@ -342,6 +381,7 @@ class RescueManagementGUI : JFrame() {
 
             cases[row] = record
 
+            if (!persistTaskCOrWarn()) return@addActionListener
             refreshCaseTable()
             clearCaseFields()
             showMessage("Rescue case updated successfully!")

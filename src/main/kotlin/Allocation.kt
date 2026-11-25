@@ -1,13 +1,29 @@
 package org.example
 
-class Allocation(
+class Allocation private constructor(
     val allocationId: Int,
     val animal: Animal,
     val facility: Facility,
     val allocationDate: String,
-    var active: Boolean
+    var active: Boolean,
+    private val restored: Boolean
 ) {
+    constructor(
+        allocationId: Int, animal: Animal, facility: Facility,
+        allocationDate: String, active: Boolean
+    ) : this(allocationId, animal, facility, allocationDate, active, false)
+
+    companion object {
+        internal fun fromStorage(
+            allocationId: Int, animal: Animal, facility: Facility,
+            allocationDate: String, active: Boolean
+        ): Allocation = Allocation(
+            allocationId, animal, facility, allocationDate, active, true
+        )
+    }
+
     init {
+        if (!restored) {
         // Check if the facility is suitable for the animal
         require(animal.species in facility.suitableSpecies) {
             "Facility is not suitable for this animal"
@@ -21,6 +37,7 @@ class Allocation(
         // Automatically increase the number of animals
         if (active) {
             facility.currentAnimals++
+        }
         }
     }
 

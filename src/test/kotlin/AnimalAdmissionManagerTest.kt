@@ -449,7 +449,6 @@ class AnimalAdmissionManagerTest {
 
         // Lowercase input with extra spaces
         manager.assignToRehabilitationCase(11, "  res-001  ")
-
         // The original reference should be preserved
         assertEquals("RES-001", animal.rehabilitationCaseReference)
     }
