@@ -1,12 +1,11 @@
 package org.example
 
-class Animal (
+class Animal(
     val id: Int,
-    var species: String, //we can modify
+    var species: String,
     var condition: String,
     var careRequirements: String,
-    var rehabilitationStatus: String
-
-
-    )
-
+    var rehabilitationStatus: String,
+    var rehabilitationCaseReference: String? = null,
+    var resourceRequirements: String = ""
+)
