@@ -84,8 +84,8 @@ class RescueManagementGUI : JFrame() {
 
     private val staffTable = JTable(staffTableModel)
 
-    private val equipments = mutableListOf<Equipment>()
-    private val staffList = mutableListOf<Staff>()
+    private val equipments = DataStorage.loadEquipment()
+    private val staffList = DataStorage.loadStaff()
 
     init {
         title = "Wildlife Rescue Management System"
@@ -772,6 +772,8 @@ class RescueManagementGUI : JFrame() {
             }
         }
 
+        refresh() // Show equipment loaded from the persistence file on startup.
+
         fun readEquipment(): Equipment? {
             val id = idField.text.trim().toIntOrNull()
             val type = typeField.text.trim()
@@ -825,6 +827,7 @@ class RescueManagementGUI : JFrame() {
             }
 
             equipments.add(equipment)
+            DataStorage.saveEquipment(equipments)
             refresh()
             clearFields()
 
@@ -852,6 +855,7 @@ class RescueManagementGUI : JFrame() {
             }
 
             equipments[row] = updated
+            DataStorage.saveEquipment(equipments)
             refresh()
             clearFields()
 
@@ -873,6 +877,7 @@ class RescueManagementGUI : JFrame() {
                 )
             ) {
                 equipments.removeAt(row)
+                DataStorage.saveEquipment(equipments)
                 refresh()
                 clearFields()
                 showMessage("Equipment deleted successfully!")
@@ -946,6 +951,8 @@ class RescueManagementGUI : JFrame() {
             }
         }
 
+        refresh() // Show staff loaded from the persistence file on startup.
+
         fun readStaff(): Staff? {
             val id = idField.text.trim().toIntOrNull()
             val name = nameField.text.trim()
@@ -1001,6 +1008,7 @@ class RescueManagementGUI : JFrame() {
             }
 
             staffList.add(staff)
+            DataStorage.saveStaff(staffList)
             refresh()
             clearFields()
 
@@ -1028,6 +1036,7 @@ class RescueManagementGUI : JFrame() {
             }
 
             staffList[row] = updated
+            DataStorage.saveStaff(staffList)
             refresh()
             clearFields()
 
@@ -1049,6 +1058,7 @@ class RescueManagementGUI : JFrame() {
                 )
             ) {
                 staffList.removeAt(row)
+                DataStorage.saveStaff(staffList)
                 refresh()
                 clearFields()
                 showMessage("Staff deleted successfully!")

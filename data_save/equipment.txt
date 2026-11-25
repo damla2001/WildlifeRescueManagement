@@ -1,0 +1,2 @@
+4|bandage|3|london|true
+5|medical needle|8|cutty sark|true
