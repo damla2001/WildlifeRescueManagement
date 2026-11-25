@@ -423,4 +423,35 @@ class AnimalAdmissionManagerTest {
         assertEquals(2, manager.getAllocations().size)
     }
 
+    @Test
+    fun testCaseInsensitiveRehabilitationAssignment() {
+        val manager = AnimalAdmissionManager()
+
+        val animal = Animal(
+            id = 11,
+            species = "Fox",
+            condition = "Injured",
+            careRequirements = "Medical treatment",
+            rehabilitationStatus = "In progress"
+        )
+
+        val rescueCase = RescueCase(
+            caseReference = "RES-001",
+            rescueDate = "2026-11-25",
+            location = "Croydon",
+            reportedCondition = "Injured",
+            status = "Open"
+        )
+
+        manager.registerAnimal(animal)
+        manager.registerRescueCase(rescueCase)
+        manager.linkAnimalToRescueCase(11, "RES-001")
+
+        // Lowercase input with extra spaces
+        manager.assignToRehabilitationCase(11, "  res-001  ")
+
+        // The original reference should be preserved
+        assertEquals("RES-001", animal.rehabilitationCaseReference)
+    }
+
 }

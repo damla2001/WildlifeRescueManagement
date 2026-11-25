@@ -119,15 +119,16 @@ class AnimalAdmissionManager {
         val animal = registeredAnimals[animalId]
             ?: throw IllegalArgumentException("Animal not found")
 
-        val rescueCase = rescueCases[caseReference]
-            ?: throw IllegalArgumentException("Rehabilitation case not found")
+        val matchedCase = rescueCases.entries.firstOrNull {
+            it.key.equals(caseReference.trim(), ignoreCase = true)
+        } ?: throw IllegalArgumentException("Rehabilitation case not found")
 
+        val rescueCase = matchedCase.value
         require(rescueCase.animals.any { it.id == animalId }) {
             "Animal must be linked to this rescue case first"
         }
 
-        animal.rehabilitationCaseReference = caseReference
-    }
+        animal.rehabilitationCaseReference = matchedCase.key    }
 
     // Record the resources required by an animal
     fun recordResourceRequirements(
