@@ -79,6 +79,22 @@ class AnimalAdmissionManager {
         return allocation
     }
 
+    /** Restore allocation history without increasing already persisted facility occupancy. */
+    internal fun restoreAllocation(
+        allocationId: Int, animalId: Int, facility: Facility,
+        allocationDate: String, active: Boolean
+    ) {
+        val animal = registeredAnimals[animalId]
+            ?: throw IllegalArgumentException("Animal not found")
+        require(allocationId !in allocations) { "Allocation ID already exists" }
+        require(!active || allocations.values.none { it.active && it.animal.id == animalId }) {
+            "Animal already has an active allocation"
+        }
+        allocations[allocationId] = Allocation.fromStorage(
+            allocationId, animal, facility, allocationDate, active
+        )
+    }
+
     // Cancel an existing allocation
     fun cancelAllocation(allocationId: Int) {
         val allocation = allocations[allocationId]

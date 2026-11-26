@@ -18,8 +18,20 @@ import javax.swing.table.DefaultTableModel
 
 class AnimalAllocationPanel(
     private val manager: AnimalAdmissionManager,
-    private val facilities: List<Facility>
+    private val facilities: List<Facility>,
+    private val onDataChanged: () -> Unit = {}
 ) : JPanel(BorderLayout(10, 10)) {
+
+    private fun persistOrWarn(): Boolean = try {
+        onDataChanged()
+        true
+    } catch (e: Exception) {
+        JOptionPane.showMessageDialog(
+            this, "Change applied in memory, but saving failed: ${e.message}",
+            "Persistence Error", JOptionPane.ERROR_MESSAGE
+        )
+        false
+    }
 
     private val animalIdField = JTextField()
     private val facilityIdField = JTextField()
@@ -179,37 +191,7 @@ class AnimalAllocationPanel(
                     facility = facility,
                     allocationDate = date
                 )
-                assignCaseButton.addActionListener {
-                    try {
-                        val animalId = rehabilitationAnimalIdField.text.trim().toIntOrNull()
-                            ?: throw IllegalArgumentException("Please enter a valid Animal ID.")
-
-                        val caseReference = rehabilitationCaseField.text.trim()
-
-                        require(animalId > 0) {
-                            "Animal ID must be greater than zero."
-                        }
-
-                        require(caseReference.isNotBlank()) {
-                            "Please enter a rehabilitation case reference."
-                        }
-
-                        manager.assignToRehabilitationCase(animalId, caseReference)
-
-                        JOptionPane.showMessageDialog(
-                            this,
-                            "Animal assigned to rehabilitation case successfully!"
-                        )
-
-                    } catch (e: IllegalArgumentException) {
-                        JOptionPane.showMessageDialog(
-                            this,
-                            e.message ?: "Unable to assign rehabilitation case.",
-                            "Assignment Error",
-                            JOptionPane.ERROR_MESSAGE
-                        )
-                    }
-                }
+                if (!persistOrWarn()) return@addActionListener
                 refreshTable()
 
                 JOptionPane.showMessageDialog(
@@ -247,6 +229,7 @@ class AnimalAllocationPanel(
 
                 manager.cancelAllocation(allocationId)
 
+                if (!persistOrWarn()) return@addActionListener
                 refreshTable()
 
                 JOptionPane.showMessageDialog(
@@ -292,6 +275,7 @@ class AnimalAllocationPanel(
             }
             try {
                 manager.updateRehabilitationStatus(animalId, newStatus)
+                if (!persistOrWarn()) return@addActionListener
 
                 JOptionPane.showMessageDialog(
                     this,
@@ -324,6 +308,7 @@ class AnimalAllocationPanel(
                 }
 
                 manager.assignToRehabilitationCase(animalId, caseReference)
+                if (!persistOrWarn()) return@addActionListener
 
                 JOptionPane.showMessageDialog(
                     this,
@@ -351,6 +336,7 @@ class AnimalAllocationPanel(
                 val requirements = resourceRequirementsField.text.trim()
 
                 manager.recordResourceRequirements(animalId, requirements)
+                if (!persistOrWarn()) return@addActionListener
 
                 JOptionPane.showMessageDialog(
                     this,
