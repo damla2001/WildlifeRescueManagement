@@ -9,6 +9,8 @@ import java.time.format.DateTimeParseException
 import java.time.format.ResolverStyle
 import javax.swing.*
 import javax.swing.table.DefaultTableModel
+import scala.jdk.javaapi.CollectionConverters
+
 
 class RescueManagementGUI : JFrame() {
 
@@ -65,7 +67,10 @@ class RescueManagementGUI : JFrame() {
     private val facilityTableModel = newTableModel(
         "ID", "Name", "Location", "Capacity",
         "Suitable Species", "Available Facilities",
-        "Available"
+        "Available",
+
+        // Display enclosure details for resource matching
+        "Enclosure Type", "Physical Space (m²)"
     )
 
     private val facilityTable = JTable(facilityTableModel)
@@ -107,6 +112,8 @@ class RescueManagementGUI : JFrame() {
         tabs.addTab("Facilities", createFacilityPanel())
         tabs.addTab("Equipment", createEquipmentPanel())
         tabs.addTab("Staff", createStaffPanel())
+        // Provide access to the resource matching interface
+        tabs.addTab("Resource Matching", createResourceMatchingPanel())
         tabs.addTab("Care Plans", createCarePlansPanel())
 
         layout = BorderLayout()
@@ -184,9 +191,143 @@ class RescueManagementGUI : JFrame() {
         }
     }
 
-    // =====================================
     // RESCUE CASE MANAGEMENT
-    // =====================================
+
+    // Create the interface for animal resource matching
+    private fun createResourceMatchingPanel(): JPanel {
+
+        val service = ResourceMatchingService()
+
+        // Collect animal resource requirements
+        val animalIdField = JTextField()
+        val enclosureTypeField = JTextField()
+        val minimumSpaceField = JTextField()
+        val equipmentField = JTextField()
+        val qualificationsField = JTextField()
+
+        // Organise the resource requirements form
+        val form = JPanel(GridLayout(5, 2, 10, 10))
+
+        form.border = BorderFactory.createTitledBorder(
+            "Animal Resource Requirements"
+        )
+
+        addField(form, "Animal ID:", animalIdField)
+        addField(form, "Enclosure Type:", enclosureTypeField)
+        addField(form, "Minimum Space (m²):", minimumSpaceField)
+        addField(form, "Required Equipment:", equipmentField)
+        addField(form, "Required Qualifications:", qualificationsField)
+
+        // Create buttons for matching and clearing inputs
+        val find = JButton("Find Matching Resources")
+        val clear = JButton("Clear Fields")
+
+        // Create a table to display suitable resource combinations
+        val model = newTableModel(
+            "Animal ID",
+            "Species",
+            "Facility ID",
+            "Facility Name",
+            "Staff ID",
+            "Staff Name",
+            "Equipment"
+        )
+
+        val table = JTable(model)
+
+        val panel = makePanel(
+            form,
+            buttons(find, clear),
+            table
+        )
+        // Read and validate the animal resource requirements
+        find.addActionListener {
+
+            model.rowCount = 0
+
+            val animalId = animalIdField.text.trim().toIntOrNull()
+            val enclosureType = enclosureTypeField.text.trim()
+            val minimumSpace = minimumSpaceField.text.trim().toDoubleOrNull()
+
+            val requiredEquipment = commaList(equipmentField.text)
+            val requiredQualifications = commaList(qualificationsField.text)
+
+            if (
+                animalId == null || animalId <= 0 ||
+                enclosureType.isBlank() ||
+                minimumSpace == null ||
+                !minimumSpace.isFinite() ||
+                minimumSpace <= 0.0
+            ) {
+                showMessage("Please enter valid resource requirements.")
+                return@addActionListener
+            }
+
+            // Find the registered animal using its ID
+            val animal = animalAdmissionManager.getRegisteredAnimals()
+                .find { it.id == animalId }
+
+            if (animal == null) {
+                showMessage("Animal not found. Please register the animal first.")
+                return@addActionListener
+            }
+            // Find suitable resource combinations using the Scala algorithm
+            val results = service.findMatches(
+                animal,
+                enclosureType,
+                minimumSpace,
+                requiredEquipment,
+                requiredQualifications,
+                facilities,
+                staffList,
+                equipments
+            )
+            // Notify the user when no suitable resources are available
+            if (results.isEmpty()) {
+                showMessage("No suitable resource combinations found.")
+                return@addActionListener
+            }
+            // Display each valid resource combination in the results table
+            results.forEach { result ->
+
+                val equipmentDetails = CollectionConverters
+                    .asJava(result.equipment())
+                    .joinToString(", ") {
+                        "${it.id()} - ${it.equipmentType()}"
+                    }
+
+                model.addRow(
+                    arrayOf<Any>(
+                        animal.id,
+                        animal.species,
+                        result.facility().id(),
+                        result.facility().name(),
+                        result.staff().id(),
+                        result.staff().name(),
+                        equipmentDetails
+                    )
+                )
+            }
+
+// Inform the user about the number of matching combinations
+            showMessage("${results.size} suitable resource combinations found.")
+        }
+
+        // Clear resource requirements and previous results
+        clear.addActionListener {
+            listOf(
+                animalIdField,
+                enclosureTypeField,
+                minimumSpaceField,
+                equipmentField,
+                qualificationsField
+            ).forEach { it.text = "" }
+
+            model.rowCount = 0
+        }
+
+        return panel
+    }
 
     private fun createRescuePanel(): JPanel {
         val form = JPanel(GridLayout(10, 2, 10, 10))
@@ -496,19 +637,24 @@ class RescueManagementGUI : JFrame() {
         val capacityField = JTextField()
         val speciesField = JTextField()
         val featuresField = JTextField()
+        // Collect enclosure requirements for resource matching
+        val enclosureTypeField = JTextField()
+        val spaceField = JTextField()
         val availableBox = JCheckBox("Available", true)
 
-        val form = JPanel(GridLayout(7, 2, 10, 10))
+        val form = JPanel(GridLayout(9, 2, 10, 10))
         form.border = BorderFactory.createTitledBorder(
             "Facility Details"
         )
-
         addField(form, "Facility ID:", idField)
         addField(form, "Facility Name:", nameField)
         addField(form, "Location:", locationField)
         addField(form, "Capacity:", capacityField)
         addField(form, "Suitable Species:", speciesField)
         addField(form, "Available Facilities:", featuresField)
+        // Allow users to enter enclosure type and physical space
+        addField(form, "Enclosure Type:", enclosureTypeField)
+        addField(form, "Physical Space (m²):", spaceField)
 
         form.add(JLabel("Facility Availability:"))
         form.add(availableBox)
@@ -525,9 +671,11 @@ class RescueManagementGUI : JFrame() {
         )
 
         fun clearFields() {
+            // Clear all facility input fields
             listOf(
                 idField, nameField, locationField,
-                capacityField, speciesField, featuresField
+                capacityField, speciesField, featuresField,
+                enclosureTypeField, spaceField
             ).forEach { it.text = "" }
 
             availableBox.isSelected = true
@@ -546,7 +694,10 @@ class RescueManagementGUI : JFrame() {
                         facility.capacity,
                         facility.suitableSpecies.joinToString(", "),
                         facility.availableFacilities.joinToString(", "),
-                        facility.available
+                        facility.available,
+                        // Display enclosure details in the facility table
+                        facility.enclosureType,
+                        facility.space
                     )
                 )
             }
@@ -558,6 +709,9 @@ class RescueManagementGUI : JFrame() {
             val location = locationField.text.trim()
             val capacity = capacityField.text.trim().toIntOrNull()
             val species = commaList(speciesField.text)
+            // Read enclosure details entered by the user
+            val enclosureType = enclosureTypeField.text.trim()
+            val space = spaceField.text.trim().toDoubleOrNull()
             val features = commaList(featuresField.text)
 
             if (
@@ -565,7 +719,9 @@ class RescueManagementGUI : JFrame() {
                 name.isBlank() ||
                 location.isBlank() ||
                 capacity == null || capacity <= 0 ||
-                species.isEmpty()
+                species.isEmpty() ||
+                enclosureType.isBlank() ||
+                space == null || !space.isFinite() || space <= 0.0
             ) {
                 showMessage("Please enter valid facility details.")
                 return null
@@ -578,7 +734,9 @@ class RescueManagementGUI : JFrame() {
                 capacity = capacity,
                 suitableSpecies = species,
                 available = availableBox.isSelected,
-                availableFacilities = features
+                availableFacilities = features,
+                enclosureType = enclosureType,
+                space = space
             )
         }
 
@@ -598,6 +756,9 @@ class RescueManagementGUI : JFrame() {
                 featuresField.text =
                     facility.availableFacilities.joinToString(", ")
                 availableBox.isSelected = facility.available
+                //Display saved enlcosure details when a facility is selected
+                enclosureTypeField.text = facility.enclosureType
+                spaceField.text = facility.space.toString()
             }
         }
 

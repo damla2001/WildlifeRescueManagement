@@ -22,7 +22,10 @@ object DataStorage{
                     facility.suitableSpecies.joinToString(";"),
                     facility.available.toString(),
                     facility.availableFacilities.joinToString(";"),
-                    facility.currentAnimals.toString()
+                    facility.currentAnimals.toString(),
+                    // Save enclosure type and physical space for resource matching
+                    facility.enclosureType,
+                    facility.space.toString()
 
                 ).joinToString("|")
             }
@@ -52,7 +55,11 @@ object DataStorage{
                 capacity = parts[3].toInt(),
                 suitableSpecies = parts[4].split(";"),
                 available = parts[5].toBoolean(),
-                availableFacilities = parts[6].split(";").filter { it.isNotEmpty() }
+                availableFacilities = parts[6].split(";").filter { it.isNotEmpty() },
+
+// Load enclosure type and physical space for resource matching
+                enclosureType = parts.getOrNull(8) ?: "",
+                space = parts.getOrNull(9)?.toDoubleOrNull() ?: 0.0
 
             )
             facility.currentAnimals = parts[7].toInt()

@@ -7,12 +7,17 @@ class Facility(
     val capacity: Int,
     val suitableSpecies: List<String>,
     var available: Boolean,
-    val availableFacilities: List<String>
-
-    ) {
+    val availableFacilities: List<String>,
+    var enclosureType: String = "",
+    var space: Double = 0.0
+) {
     init {
         require(capacity > 0) {
             "Facility capacity must be greater than zero"
+        }
+        //
+        require(space >= 0.0) {
+            "Facility space cannot be negative"
         }
     }
 
@@ -22,5 +27,3 @@ class Facility(
         return available && currentAnimals < capacity
     }
 }
-
-
