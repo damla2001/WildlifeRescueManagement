@@ -145,6 +145,7 @@ class RescueManagementGUI : JFrame() {
         tabs.addTab("Facilities", createFacilityPanel())
         tabs.addTab("Equipment", createEquipmentPanel())
         tabs.addTab("Staff", createStaffPanel())
+        tabs.addTab("Resource Matching", ResourceMatchingPanel(animalAdmissionManager, facilities,equipments,staffList)) //added a new tab to GUI for scala
         tabs.addTab("Care Plans", createCarePlansPanel())
 
         layout = BorderLayout()

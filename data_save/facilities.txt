@@ -1,2 +1,3 @@
-543|London Rehab|mile end|54|fox;cats;dogs|true|3|0
-546|greenwich Rehab|cutty sark|60|cows;sheep;chicken|true|2|0
+543|London Rehab|mile end|54|fox;cat;dog|true|3|0
+546|greenwich Rehab|cutty sark|60|cow;sheep;chicken|true|indoor;outdoor|0
+101|london animal rescue|oxford street|60|beaver;dog;cat;bird;cow|true|indoor|0

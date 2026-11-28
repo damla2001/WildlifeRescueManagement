@@ -1,2 +1,3 @@
 4|bandage|3|london|true
 5|medical needle|8|cutty sark|true
+1|splinter|10|london|true
